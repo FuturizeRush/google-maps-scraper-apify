@@ -1,0 +1,103 @@
+{
+    "title": "Google Maps Business Scraper Input",
+    "description": "Configure the Google Maps Business Scraper to extract business listings",
+    "type": "object",
+    "schemaVersion": 1,
+    "properties": {
+        "searchQueries": {
+            "title": "Search Queries",
+            "type": "array",
+            "description": "List of search queries to scrape from Google Maps",
+            "prefill": ["restaurants New York"],
+            "editor": "stringList",
+            "items": {
+                "type": "string"
+            },
+            "minItems": 1
+        },
+        "maxResults": {
+            "title": "Maximum Results",
+            "type": "integer",
+            "description": "Maximum number of results to extract per search (Google Maps typically limits to ~120)",
+            "minimum": 1,
+            "maximum": 200,
+            "default": 100,
+            "prefill": 100
+        },
+        "language": {
+            "title": "Language",
+            "type": "string",
+            "description": "Language for search results",
+            "default": "en",
+            "prefill": "en",
+            "enum": ["en", "zh-TW", "zh-CN", "ja", "ko", "es", "fr", "de"],
+            "enumTitles": ["English", "Traditional Chinese", "Simplified Chinese", "Japanese", "Korean", "Spanish", "French", "German"]
+        },
+        "scrapeDetails": {
+            "title": "Scrape Details",
+            "type": "boolean",
+            "description": "Whether to scrape detailed information by visiting each business page (slower but more data)",
+            "default": false
+        },
+        "scrapeEmails": {
+            "title": "Scrape Emails",
+            "type": "boolean",
+            "description": "Whether to attempt extracting email addresses from business pages",
+            "default": false
+        },
+        "maxScrolls": {
+            "title": "Maximum Scrolls",
+            "type": "integer",
+            "description": "Maximum number of scroll attempts to load more results",
+            "minimum": 10,
+            "maximum": 100,
+            "default": 50,
+            "prefill": 50
+        },
+        "proxyConfiguration": {
+            "title": "Proxy Configuration",
+            "type": "object",
+            "description": "Select proxies to use for scraping",
+            "prefill": {
+                "useApifyProxy": true
+            },
+            "default": {
+                "useApifyProxy": true
+            },
+            "editor": "proxy"
+        },
+        "startUrls": {
+            "title": "Start URLs (Optional)",
+            "type": "array",
+            "description": "Optional: Direct Google Maps URLs to scrape instead of search queries",
+            "editor": "requestListSources",
+            "items": {
+                "type": "object",
+                "properties": {
+                    "url": {
+                        "type": "string",
+                        "title": "URL",
+                        "description": "Google Maps URL"
+                    }
+                }
+            }
+        },
+        "useMultiSearch": {
+            "title": "Use Multi-Region Search",
+            "type": "boolean",
+            "description": "Enable multi-region search to get 100+ results by searching different areas",
+            "default": false
+        },
+        "searchRegions": {
+            "title": "Search Regions",
+            "type": "array",
+            "description": "Additional regions to search (e.g., 'North', 'South', 'Downtown'). Leave empty for default regions.",
+            "editor": "stringList",
+            "items": {
+                "type": "string"
+            },
+            "default": []
+        }
+    },
+    "required": ["searchQueries"]
+}

@@ -1,0 +1,33 @@
+{
+  "name": "google-maps-business-scraper",
+  "version": "0.1.0",
+  "description": "Google Maps Business Scraper - Extract 100+ business listings with comprehensive data",
+  "main": "main.js",
+  "scripts": {
+    "start": "node main.js",
+    "test": "node test.js"
+  },
+  "keywords": [
+    "google-maps",
+    "scraper",
+    "business-data",
+    "apify",
+    "puppeteer",
+    "web-scraping",
+    "reviews",
+    "business-information"
+  ],
+  "author": "Google Maps Business Scraper",
+  "license": "Apache-2.0",
+  "dependencies": {
+    "apify": "^3.4.4",
+    "puppeteer": "^24.16.2"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/your-username/google-maps-business-scraper"
+  },
+  "engines": {
+    "node": ">=20.0.0"
+  }
+}

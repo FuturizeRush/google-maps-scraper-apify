@@ -1,0 +1,52 @@
+{
+    "actorSpecification": 1,
+    "name": "google-maps-business-scraper",
+    "title": "Google Maps Business Scraper",
+    "description": "Google Maps scraper that extracts comprehensive business data. Capable of retrieving 100+ results per search with detailed information including ratings, reviews, addresses, phone numbers, and websites.",
+    "version": "0.1",
+    "meta": {
+        "templateId": "js-start"
+    },
+    "input": "./INPUT_SCHEMA.json",
+    "dockerfile": "./Dockerfile",
+    "storages": {
+        "dataset": {
+            "actorSpecification": 1,
+            "title": "Google Maps businesses",
+            "views": {
+                "businesses": {
+                    "title": "Businesses",
+                    "transformation": {
+                        "fields": [
+                            "name",
+                            "placeId",
+                            "rating",
+                            "reviews",
+                            "address",
+                            "businessType",
+                            "url",
+                            "phone",
+                            "website"
+                        ]
+                    },
+                    "display": {
+                        "component": "table",
+                        "properties": {
+                            "name": {
+                                "label": "Business Name"
+                            },
+                            "rating": {
+                                "label": "Rating",
+                                "format": "number"
+                            },
+                            "reviews": {
+                                "label": "Reviews Count",
+                                "format": "number"
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+}

@@ -1,0 +1,28 @@
+# Dependencies
+node_modules/
+package-lock.json
+
+# Apify
+apify_storage/
+.actor/apify_storage/
+
+# IDE
+.vscode/
+.idea/
+.DS_Store
+
+# Logs
+*.log
+logs/
+
+# Test output
+results/
+test-results/
+
+# Environment
+.env
+.env.local
+# Added by Apify CLI
+storage
+node_modules
+.venv
