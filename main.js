@@ -1,31 +1,31 @@
 /**
- * Apify Actor Entry Point
- * Google Maps Business Scraper - Extract 100+ business listings
+ * Apify Actor 進入點
+ * Google Maps 商家爬蟲 - 提取 100+ 商家列表
  */
 
 const { Actor, log } = require('apify');
 const GoogleMapsScraper = require('./src/scraper/GoogleMapsScraper');
 
-// Input validation function
+// 輸入驗證函式
 const validateInput = (input) => {
     if (!input) {
         throw new Error('No input provided');
     }
     
-    // Validate maxResults
+    // 驗證最大結果數量
     if (input.maxResults && input.maxResults > 200) {
         log.warning('maxResults capped at 200 (was ' + input.maxResults + ')');
         input.maxResults = 200;
     }
     
-    // Clean searchQueries
+    // 清理搜尋查詢
     if (input.searchQueries) {
         input.searchQueries = input.searchQueries
             .filter(q => q && typeof q === 'string' && q.trim())
             .map(q => q.trim());
     }
     
-    // Validate maxScrolls
+    // 驗證最大滾動次數
     if (input.maxScrolls && input.maxScrolls > 100) {
         log.warning('maxScrolls capped at 100 (was ' + input.maxScrolls + ')');
         input.maxScrolls = 100;
@@ -35,12 +35,12 @@ const validateInput = (input) => {
 };
 
 Actor.main(async () => {
-    // Get input
+    // 取得輸入參數
     let input = await Actor.getInput();
     log.info('Starting Google Maps Business Scraper');
     log.info('Input:', input);
 
-    // Validate input
+    // 驗證輸入參數
     input = validateInput(input);
 
     const {
@@ -51,23 +51,19 @@ Actor.main(async () => {
         scrapeDetails = false,
         scrapeEmails = false,
         maxScrolls = 50,
-        proxyConfiguration = null,
         useMultiSearch = false,
         searchRegions = []
     } = input;
 
-    // Validate that we have something to search
+    // 驗證是否有搜尋內容
     if (searchQueries.length === 0 && startUrls.length === 0) {
         throw new Error('Please provide either searchQueries or startUrls');
     }
 
-    // Setup proxy (disabled for now)
-    const proxyConfig = null; // await Actor.createProxyConfiguration(proxyConfiguration);
-
-    // Initialize dataset
+    // 初始化資料集
     const dataset = await Actor.openDataset();
     
-    // Statistics
+    // 統計資訊
     const stats = {
         totalSearches: 0,
         totalResults: 0,
@@ -75,19 +71,13 @@ Actor.main(async () => {
         startTime: Date.now()
     };
 
-    // Process search queries
+    // 處理搜尋查詢
     for (const query of searchQueries) {
         try {
             log.info(`Processing search query: ${query}`);
             stats.totalSearches++;
-
-            // Get proxy URL
-            let proxyUrl = null;
-            if (proxyConfig) {
-                proxyUrl = await proxyConfig.newUrl();
-            }
             
-            // Create scraper instance
+            // 建立爬蟲實例（不支援代理）
             const scraper = new GoogleMapsScraper({
                 searchQuery: query,
                 maxResults,
@@ -95,26 +85,25 @@ Actor.main(async () => {
                 headless: true,
                 maxScrolls,
                 scrapeDetails,
-                scrapeEmails,
-                proxyUrl
+                scrapeEmails
             });
 
-            // Initialize and run scraper
+            // 初始化並執行爬蟲
             await scraper.init();
             
             let results;
             if (useMultiSearch && maxResults > 50) {
-                // Use multi-region search for large result sets
+                // 對大結果集使用多區域搜尋
                 results = await scraper.searchMultipleQueries(query, searchRegions);
             } else {
-                // Single search
+                // 單一搜尋
                 results = await scraper.search();
             }
             
             log.info(`Found ${results.length} results for "${query}"`);
             stats.totalResults += results.length;
 
-            // Save results to dataset in batches
+            // 批次儲存結果到資料集
             const BATCH_SIZE = 50;
             for (let i = 0; i < results.length; i += BATCH_SIZE) {
                 const batch = results.slice(i, i + BATCH_SIZE).map(business => ({
@@ -125,18 +114,18 @@ Actor.main(async () => {
                 await dataset.pushData(batch);
             }
 
-            // Clean up
+            // 清理資源
             await scraper.close();
 
-            // Be nice to Google
-            await new Promise(resolve => setTimeout(resolve, 2000));
+            // 對 Google 友好的延遲
+            await new Promise(resolve => setTimeout(resolve, 1000));
 
         } catch (error) {
             log.error(`Failed to process query "${query}":`, error.message);
             log.error('Error stack:', error.stack);
             stats.failedSearches++;
             
-            // Save error to dataset
+            // 儲存錯誤到資料集
             await dataset.pushData({
                 query,
                 error: error.message,
@@ -145,25 +134,19 @@ Actor.main(async () => {
         }
     }
 
-    // Process start URLs if provided
+    // 處理起始網址（如果有提供）
     for (const urlObj of startUrls) {
         try {
             const url = urlObj.url || urlObj;
             log.info(`Processing URL: ${url}`);
             stats.totalSearches++;
 
-            // Extract search query from URL
+            // 從網址提取搜尋查詢
             const urlParams = new URL(url);
             const searchPath = urlParams.pathname.split('/search/')[1];
             const searchQuery = searchPath ? decodeURIComponent(searchPath.split('/')[0]) : 'Direct URL';
 
-            // Get proxy URL
-            let proxyUrl = null;
-            if (proxyConfig) {
-                proxyUrl = await proxyConfig.newUrl();
-            }
-
-            // Create scraper instance
+            // 建立爬蟲實例（不支援代理）
             const scraper = new GoogleMapsScraper({
                 directUrl: url,
                 searchQuery,
@@ -172,18 +155,17 @@ Actor.main(async () => {
                 headless: true,
                 maxScrolls,
                 scrapeDetails,
-                scrapeEmails,
-                proxyUrl
+                scrapeEmails
             });
 
-            // Initialize and run scraper
+            // 初始化並執行爬蟲
             await scraper.init();
             const results = await scraper.searchByUrl(url);
             
             log.info(`Found ${results.length} results from URL`);
             stats.totalResults += results.length;
 
-            // Save results to dataset in batches
+            // 批次儲存結果到資料集
             const BATCH_SIZE = 50;
             for (let i = 0; i < results.length; i += BATCH_SIZE) {
                 const batch = results.slice(i, i + BATCH_SIZE).map(business => ({
@@ -195,18 +177,18 @@ Actor.main(async () => {
                 await dataset.pushData(batch);
             }
 
-            // Clean up
+            // 清理資源
             await scraper.close();
 
-            // Be nice to Google
-            await new Promise(resolve => setTimeout(resolve, 2000));
+            // 對 Google 友好的延遲
+            await new Promise(resolve => setTimeout(resolve, 1000));
 
         } catch (error) {
             log.error(`Failed to process URL "${urlObj.url || urlObj}":`, error.message);
             log.error('Error stack:', error.stack);
             stats.failedSearches++;
             
-            // Save error to dataset
+            // 儲存錯誤到資料集
             await dataset.pushData({
                 sourceUrl: urlObj.url,
                 error: error.message,
@@ -215,7 +197,7 @@ Actor.main(async () => {
         }
     }
 
-    // Calculate final statistics
+    // 計算最終統計
     const duration = Math.round((Date.now() - stats.startTime) / 1000);
     const finalStats = {
         ...stats,
@@ -229,10 +211,10 @@ Actor.main(async () => {
     log.info('Scraping completed!');
     log.info('Final statistics:', finalStats);
 
-    // Save statistics to key-value store
+    // 儲存統計到鍵值存儲
     await Actor.setValue('STATS', finalStats);
 
-    // Create summary
+    // 建立摘要
     const summary = {
         totalResults: stats.totalResults,
         totalSearches: stats.totalSearches,
@@ -243,6 +225,10 @@ Actor.main(async () => {
     };
 
     log.info('Summary:', summary);
+    
+    // 確保所有資源正確關閉
+    // 小延遲以確保所有非同步操作完成
+    await new Promise(resolve => setTimeout(resolve, 1000));
     
     return summary;
 });

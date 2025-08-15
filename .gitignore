@@ -5,6 +5,7 @@ package-lock.json
 # Apify
 apify_storage/
 .actor/apify_storage/
+storage/
 
 # IDE
 .vscode/
@@ -15,6 +16,25 @@ apify_storage/
 *.log
 logs/
 
+# Test files
+test-*.js
+test-*.json
+*-test.js
+*-test.json
+analyze-*.js
+verify-*.js
+validate-*.js
+strict-*.js
+check-*.sh
+final-*.json
+comprehensive-*.json
+quick-*.json
+
+# Screenshots and images
+*.png
+*.jpg
+*.jpeg
+
 # Test output
 results/
 test-results/
@@ -22,7 +42,11 @@ test-results/
 # Environment
 .env
 .env.local
+
+# Temporary files
+*.tmp
+*.temp
+.cache/
+
 # Added by Apify CLI
-storage
-node_modules
 .venv

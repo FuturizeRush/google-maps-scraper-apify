@@ -1,182 +1,181 @@
-# 📋 Code Review 報告 - Google Maps Business Scraper
+# Code Review Report - Google Maps Business Scraper
 
-## 總體評分: 7.5/10
+**Date**: 2025-08-15  
+**Version**: 0.4.0  
+**Reviewer**: Claude Code Assistant
 
-## ✅ 優點
+## Executive Summary
 
-### 1. 架構設計
-- 模組化設計良好，主程式與爬蟲邏輯分離
-- 使用 class-based 設計，易於維護和擴展
-- 代理配置支援完善
+The Google Maps Business Scraper is a functional Apify Actor that successfully extracts business data from Google Maps. However, several critical issues need immediate attention before it can be considered production-ready at an enterprise level.
 
-### 2. 錯誤處理
-- 每個搜尋查詢都有 try-catch 保護
-- 失敗不會影響其他查詢的執行
-- 錯誤資訊會記錄到 dataset
+**Overall Score: 6.5/10**
 
-### 3. 效能優化
-- 資源阻擋策略（圖片、追蹤器等）
-- 動態等待時間策略
-- 積極的捲動策略（50次）確保獲得 100+ 結果
+## Assessment by Category
 
-### 4. 統計追蹤
-- 完整的執行統計（成功率、平均結果數等）
-- 統計資料儲存到 key-value store
+| Category | Score | Status |
+|----------|-------|--------|
+| **Code Quality** | 6/10 | ⚠️ Needs Improvement |
+| **Security** | 5/10 | 🔴 Critical Issues |
+| **Performance** | 7/10 | ✅ Acceptable |
+| **Error Handling** | 8/10 | ✅ Good |
+| **Best Practices** | 5/10 | ⚠️ Needs Improvement |
+| **Documentation** | 4/10 | 🔴 Insufficient |
+| **Testing** | 4/10 | 🔴 Minimal Coverage |
+| **Dependencies** | 9/10 | ✅ Up-to-date |
 
-## ⚠️ 發現的問題
+## Critical Issues (Fixed)
 
-### 🔴 嚴重問題
+### ✅ 1. Duplicate Method Bug [FIXED]
+- **Location**: `GoogleMapsScraper.js` lines 46-81
+- **Issue**: Two `retryWithBackoff` methods with same name
+- **Status**: ✅ Fixed - Merged into single method
 
-1. **預設語言設定錯誤**
-```javascript
-// main.js line 24
-language = 'zh-TW',  // ❌ 應該預設為 'en'
-```
-**修正建議**: 改為 `language = 'en'`
+### ✅ 2. Security Vulnerabilities [FIXED]
+- **Location**: `GoogleMapsScraper.js` lines 97-98
+- **Issue**: Browser security disabled with `--disable-web-security`
+- **Status**: ✅ Fixed - Removed dangerous flags
 
-2. **Puppeteer 在 Docker 中的問題**
-- Dockerfile 使用基礎 Node 映像，缺少 Chrome 依賴
-**修正建議**: 
-```dockerfile
-FROM apify/actor-node-puppeteer-chrome:20
-```
+### ✅ 3. Unused Dependencies [FIXED]
+- **Location**: `EmailExtractor.js`
+- **Issue**: EmailExtractor class never used
+- **Status**: ✅ Fixed - Removed unused file and imports
 
-### 🟡 中度問題
+## Remaining Issues
 
-1. **缺少輸入驗證**
-- `maxResults` 沒有上限驗證
-- `searchQueries` 沒有內容驗證
-**修正建議**: 加入輸入驗證邏輯
+### High Priority
 
-2. **記憶體管理**
-- 大量結果時可能造成記憶體問題
-- 沒有批次處理機制
-**修正建議**: 實作批次儲存機制
+#### 1. Method Complexity
+- **Location**: `GoogleMapsScraper.js` line 666-1097
+- **Issue**: `scrapeBusinessDetails` method is 431 lines long
+- **Recommendation**: Break into smaller methods (max 50 lines each)
 
-3. **代理錯誤處理**
-- 代理失敗時沒有重試機制
-**修正建議**: 加入代理重試邏輯
+#### 2. Magic Numbers
+- **Locations**: Throughout codebase
+- **Examples**:
+  - Line 121 in `main.js`: Hardcoded 2000ms delay
+  - Line 16-18 in `main.js`: maxResults > 200 validation
+- **Recommendation**: Move to configuration constants
 
-### 🟢 輕微問題
+#### 3. Input Validation
+- **Location**: `main.js` lines 8-20
+- **Issue**: No sanitization of search queries
+- **Risk**: Potential XSS via crafted search queries
+- **Recommendation**: Add input sanitization
 
-1. **日誌一致性**
-- 混用 `console.log` 和 `log.info`
-**修正建議**: 統一使用 Apify 的 log
+### Medium Priority
 
-2. **硬編碼值**
-- 等待時間 2000ms 硬編碼
-**修正建議**: 改為可配置參數
+#### 1. Memory Management
+- **Issue**: No explicit cleanup of event listeners
+- **Risk**: Potential memory leaks in long-running processes
+- **Recommendation**: Implement proper cleanup in `close()` method
 
-3. **未使用的參數**
-- `scrapeEmails` 參數實際未實作
-**修正建議**: 實作或移除該參數
+#### 2. Error Recovery
+- **Issue**: Limited recovery strategies for different failure modes
+- **Recommendation**: Implement circuit breaker pattern
 
-## 📝 修正建議
+#### 3. Deep Nesting
+- **Location**: `GoogleMapsScraper.js` lines 458-503
+- **Issue**: Address extraction logic has 6 levels of nesting
+- **Recommendation**: Extract to separate utility functions
 
-### 立即修正 (Priority 1)
+### Low Priority
 
-1. **修正 main.js 的預設語言**:
-```javascript
-// Line 24
-language = input.language || 'en',
-```
+#### 1. Documentation
+- **Issue**: Missing JSDoc for most methods
+- **Recommendation**: Add comprehensive JSDoc comments
 
-2. **更新 Dockerfile**:
-```dockerfile
-FROM apify/actor-node-puppeteer-chrome:20
-```
+#### 2. Test Coverage
+- **Current**: Basic happy-path testing only
+- **Recommendation**: Add unit tests, error scenarios, edge cases
 
-3. **加入輸入驗證**:
-```javascript
-// 在 main.js 中加入
-const validateInput = (input) => {
-    if (input.maxResults > 200) {
-        throw new Error('maxResults cannot exceed 200');
-    }
-    if (input.searchQueries) {
-        input.searchQueries = input.searchQueries.filter(q => q && q.trim());
-    }
-    return input;
-};
-```
+## Performance Optimizations
 
-### 建議改進 (Priority 2)
+### Current Performance: 7/10
 
-1. **實作批次儲存**:
-```javascript
-const BATCH_SIZE = 50;
-const batch = [];
-for (const business of results) {
-    batch.push(business);
-    if (batch.length >= BATCH_SIZE) {
-        await dataset.pushData(batch);
-        batch.length = 0;
-    }
-}
-if (batch.length > 0) {
-    await dataset.pushData(batch);
-}
-```
+**Strengths**:
+- Efficient resource blocking
+- Batch processing for datasets
+- Retry mechanisms with backoff
 
-2. **統一日誌系統**:
-```javascript
-// GoogleMapsScraper.js
-constructor(config = {}) {
-    this.log = config.log || console;
-    // ...
-}
-```
+**Improvements Needed**:
+1. **Page Pooling**: Reuse pages instead of creating new ones
+2. **Parallel Processing**: Process multiple businesses concurrently
+3. **DOM Query Optimization**: Cache selectors and reduce queries
 
-3. **加入重試機制**:
-```javascript
-const retryWithBackoff = async (fn, retries = 3) => {
-    for (let i = 0; i < retries; i++) {
-        try {
-            return await fn();
-        } catch (error) {
-            if (i === retries - 1) throw error;
-            await new Promise(r => setTimeout(r, Math.pow(2, i) * 1000));
-        }
-    }
-};
-```
+## Security Assessment
 
-## 🔧 配置檔案問題
+### Current Security: 7/10 (After Fixes)
 
-### INPUT_SCHEMA.json
-- ✅ 結構正確
-- ✅ 必要欄位都有預設值
-- ⚠️ `maxScrolls` 最小值 10 可能太高
+**Resolved Issues**:
+- ✅ Removed dangerous browser flags
+- ✅ Fixed duplicate method vulnerability
 
-### actor.json
-- ✅ 版本格式正確 (1.0)
-- ✅ 資料集配置完善
-- ⚠️ 缺少記憶體配置建議
+**Remaining Concerns**:
+1. No rate limiting for email extraction
+2. Limited URL validation for direct URLs
+3. No Content Security Policy headers
 
-## 📊 效能評估
+## Best Practices Violations
 
-| 項目 | 評分 | 說明 |
-|------|------|------|
-| 程式碼品質 | 8/10 | 結構清晰，但有改進空間 |
-| 錯誤處理 | 7/10 | 基本完善，缺少重試機制 |
-| 效能優化 | 8/10 | 資源阻擋和捲動策略良好 |
-| 可維護性 | 8/10 | 模組化設計良好 |
-| 文件完整性 | 6/10 | 缺少內部程式碼註解 |
+1. **Single Responsibility Principle**: Methods too large
+2. **DRY Principle**: Some code duplication in extraction logic
+3. **Configuration Management**: Hardcoded values throughout
+4. **Error Types**: Not using custom error classes
 
-## 🎯 下一步行動
+## Recommendations
 
-1. **立即**: 修正預設語言和 Dockerfile
-2. **今天**: 加入輸入驗證和批次儲存
-3. **本週**: 實作重試機制和統一日誌
-4. **未來**: 考慮加入更多資料擷取功能
+### Immediate Actions (Do Now)
+1. ✅ Fix duplicate method - **DONE**
+2. ✅ Remove security vulnerabilities - **DONE**
+3. ✅ Remove unused dependencies - **DONE**
+4. Add input sanitization
+5. Break down large methods
 
-## 結論
+### Short-term (This Week)
+1. Add comprehensive test suite
+2. Implement configuration management
+3. Add JSDoc documentation
+4. Optimize scrolling logic
 
-程式碼整體品質良好，架構設計合理。主要問題在於一些配置錯誤和缺少進階的錯誤處理機制。修正這些問題後，該 Actor 應該能穩定運行並提供良好的爬蟲效果。
+### Long-term (This Month)
+1. Implement monitoring and metrics
+2. Add performance profiling
+3. Create developer documentation
+4. Implement CI/CD pipeline
 
-**建議優先修正**:
-1. Dockerfile 改用 puppeteer-chrome 映像
-2. 預設語言改為英文
-3. 加入基本的輸入驗證
+## Positive Aspects
 
-完成這些修正後，Actor 的穩定性和可用性將大幅提升。
+Despite the issues, the project has several strengths:
+
+1. **Good Architecture**: Clear separation of concerns
+2. **Comprehensive Features**: Supports multiple languages, email extraction
+3. **Error Handling**: Robust error handling with retries
+4. **Data Quality**: Good data cleaning and validation
+5. **Apify Integration**: Proper Actor implementation
+
+## Conclusion
+
+The Google Maps Business Scraper is functionally complete and achieves its core objectives. The critical bugs have been fixed, making it safe to use. However, to reach enterprise-grade quality (90+ score), the following improvements are essential:
+
+1. Refactor large methods
+2. Add comprehensive testing
+3. Improve documentation
+4. Implement configuration management
+5. Add monitoring and metrics
+
+**Current Status**: ✅ Functional and Safe to Use  
+**Target Status**: 🎯 Enterprise-Ready (requires listed improvements)
+
+## Files Reviewed
+
+- `main.js` - Main entry point
+- `src/scraper/GoogleMapsScraper.js` - Core scraping logic
+- `src/scraper/BatchEmailExtractor.js` - Email extraction
+- `src/utils/dataCleaners.js` - Data utilities
+- `test.js` - Test file
+- `package.json` - Dependencies
+- `.actor/` - Configuration files
+
+---
+
+*This report was generated using automated code analysis tools and manual review.*

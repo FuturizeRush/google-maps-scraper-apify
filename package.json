@@ -1,6 +1,6 @@
 {
   "name": "google-maps-business-scraper",
-  "version": "0.1.0",
+  "version": "0.4.0",
   "description": "Google Maps Business Scraper - Extract 100+ business listings with comprehensive data",
   "main": "main.js",
   "scripts": {

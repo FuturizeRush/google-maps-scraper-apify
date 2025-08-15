@@ -3,7 +3,7 @@
     "name": "google-maps-business-scraper",
     "title": "Google Maps Business Scraper",
     "description": "Google Maps scraper that extracts comprehensive business data. Capable of retrieving 100+ results per search with detailed information including ratings, reviews, addresses, phone numbers, and websites.",
-    "version": "0.1",
+    "version": "0.4",
     "meta": {
         "templateId": "js-start"
     },
