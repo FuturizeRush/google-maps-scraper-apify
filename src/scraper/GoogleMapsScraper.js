@@ -407,17 +407,19 @@ class GoogleMapsScraper {
                     
                     // 方法 2: data 參數中的 ChIJ 格式  
                     if (!placeId) {
-                        const dataMatch = href.match(/[!&]1s(ChI[^!&]+)/);
+                        const dataMatch = href.match(/[!&]1s(ChI[^!&?]+)/);
                         if (dataMatch) {
-                            placeId = dataMatch[1];
+                            // 清理 Place ID，移除查詢參數
+                            placeId = dataMatch[1].split('?')[0];
                         }
                     }
                     
                     // 方法 3: !19s 參數
                     if (!placeId) {
-                        const pidMatch = href.match(/!19s(ChI[^!&]+)/);
+                        const pidMatch = href.match(/!19s(ChI[^!&?]+)/);
                         if (pidMatch) {
-                            placeId = pidMatch[1];
+                            // 清理 Place ID，移除查詢參數
+                            placeId = pidMatch[1].split('?')[0];
                         }
                     }
                     
@@ -427,7 +429,8 @@ class GoogleMapsScraper {
                                        link.getAttribute('data-place-id') ||
                                        link.getAttribute('data-value');
                         if (dataPid && dataPid.startsWith('ChI')) {
-                            placeId = dataPid;
+                            // 清理 Place ID，移除查詢參數
+                            placeId = dataPid.split('?')[0];
                         }
                         
                         // 檢查父元素
@@ -435,7 +438,8 @@ class GoogleMapsScraper {
                             const parentDataPid = link.parentElement.getAttribute('data-pid') || 
                                                 link.parentElement.getAttribute('data-place-id');
                             if (parentDataPid && parentDataPid.startsWith('ChI')) {
-                                placeId = parentDataPid;
+                                // 清理 Place ID，移除查詢參數
+                                placeId = parentDataPid.split('?')[0];
                             }
                         }
                     }
@@ -468,6 +472,11 @@ class GoogleMapsScraper {
                         }
                     }
 
+                    // 最終清理 Place ID - 確保移除所有查詢參數
+                    if (placeId && placeId.includes('?')) {
+                        placeId = placeId.split('?')[0];
+                    }
+                    
                     // 跳過重複項目 - 使用 Place ID 作為主要去重依據
                     if (seen.has(placeId)) {
                         // 跳過重複的 Place ID
