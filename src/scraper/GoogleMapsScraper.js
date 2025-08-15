@@ -566,9 +566,13 @@ class GoogleMapsScraper {
                                 const cleanedText = spanText?.replace(/^[·\s]+/, '').trim();
                                 
                                 // 排除營業時間等非地址資訊
+                                // 重要：排除評分格式如 "4.9(200)" 或 "4.9 (200)" 或 "4.6(2,846)"
                                 if (cleanedText && 
                                     !cleanedText.match(/營業|已打烊|Opens|Closes|AM|PM|⋅|時間/) &&
                                     !cleanedText.match(/\$\d+/) && // 排除價格範圍
+                                    !cleanedText.match(/^[\d.]+\s*\([0-9,]+\)$/) && // 排除評分格式 "4.9(200)" 或 "4.6(2,846)"
+                                    !cleanedText.match(/^\([0-9,]+\)$/) && // 排除純評論數 "(200)" 或 "(2,846)"
+                                    !cleanedText.match(/^\d+-\d+$/) && // 排除價格範圍 "200-400"
                                     (
                                         cleanedText.match(/\d+/) || // 包含數字（門牌）
                                         cleanedText.match(/[區市縣鄉鎮村里路街巷弄號樓]/) || // 中文地址關鍵字
@@ -595,6 +599,9 @@ class GoogleMapsScraper {
                             const part = parts[i];
                             if (part && 
                                 !part.match(/營業|已打烊|Opens|Closes|AM|PM|⋅/) &&
+                                !part.match(/^[\d.]+\s*\([0-9,]+\)$/) && // 排除評分格式 "4.9(200)" 或 "4.6(2,846)"
+                                !part.match(/^\([0-9,]+\)$/) && // 排除純評論數
+                                !part.match(/^\d+-\d+$/) && // 排除價格範圍 "200-400"
                                 (part.match(/\d+/) || part.match(/[區市縣路街]/))) {
                                 address = part;
                                 break;
@@ -605,21 +612,42 @@ class GoogleMapsScraper {
                     }
 
 
-                    // Extract phone (improved regex to avoid false matches)
-                    // Look for patterns like (312) 555-1234 or 312-555-1234 or +1 312 555 1234
-                    const phoneMatch = container.textContent.match(/(\+?1?\s*\(?\d{3}\)?[\s.-]?\d{3}[\s.-]?\d{4})/);
-                    const phone = phoneMatch ? phoneMatch[1].trim() : '';
+                    // 提取電話號碼 - 支援多種格式
+                    // 台灣格式: +886 2 1234 5678, 02-1234-5678, (02)12345678
+                    // 國際格式: +1 312 555 1234, (312) 555-1234
+                    let phone = null;
+                    const phonePatterns = [
+                        /(\+886[\s-]?\d{1,2}[\s-]?\d{3,4}[\s-]?\d{3,4})/, // 台灣國際格式
+                        /(\(\d{2}\)[\s-]?\d{3,4}[\s-]?\d{3,4})/, // 台灣本地格式 (02) 1234 5678
+                        /(\d{2}[\s-]\d{4}[\s-]\d{4})/, // 台灣本地格式 02-1234-5678
+                        /(\+\d{1,3}[\s-]?\(?\d{1,4}\)?[\s-]?\d{3,4}[\s-]?\d{3,4})/, // 國際格式
+                        /(\d{4}[\s-]\d{3}[\s-]\d{3})/ // 0912-345-678 手機格式
+                    ];
+                    
+                    const fullText = container.textContent || '';
+                    for (const pattern of phonePatterns) {
+                        const phoneMatch = fullText.match(pattern);
+                        if (phoneMatch) {
+                            const candidate = phoneMatch[1].trim();
+                            // 排除價格範圍（如 200-400）
+                            if (!candidate.match(/^\d{2,3}-\d{2,3}$/)) {
+                                phone = candidate;
+                                break;
+                            }
+                        }
+                    }
 
+                    // 確保空值為 null 而非空字串
                     results.push({
                         name: businessName,
                         placeId,
                         latitude,
                         longitude,
-                        rating,
-                        reviews,
-                        address,
-                        businessType,
-                        phone,
+                        rating: rating || null,
+                        reviews: reviews || 0,
+                        address: address || null,  // 如果沒有地址，設為 null
+                        businessType: businessType || null,
+                        phone: phone || null,
                         url: href
                     });
 
