@@ -1,14 +1,14 @@
 {
     "title": "Google Maps Business Scraper Input",
-    "description": "Configure the Google Maps Business Scraper to extract business listings",
+    "description": "Extract comprehensive business data from Google Maps including contact info, hours, reviews, and emails.",
     "type": "object",
     "schemaVersion": 1,
     "properties": {
         "searchQueries": {
             "title": "Search Queries",
             "type": "array",
-            "description": "List of search queries to scrape from Google Maps",
-            "prefill": ["restaurants New York"],
+            "description": "Enter search terms like 'coffee shops Taipei' or 'hotels near Taipei 101'",
+            "prefill": ["starbucks taipei", "7-11 convenience store taipei"],
             "editor": "stringList",
             "items": {
                 "type": "string"
@@ -18,7 +18,7 @@
         "maxResults": {
             "title": "Maximum Results",
             "type": "integer",
-            "description": "Maximum number of results to extract per search (Google Maps typically limits to ~120)",
+            "description": "Number of results per search. Recommended: 50-100 for best cost efficiency (max ~120)",
             "minimum": 50,
             "maximum": 200,
             "default": 100,
@@ -27,7 +27,7 @@
         "language": {
             "title": "Language",
             "type": "string",
-            "description": "Language for search results",
+            "description": "Interface language for better local results",
             "default": "en",
             "prefill": "en",
             "enum": ["en", "zh-TW", "zh-CN", "ja", "ko", "es", "fr", "de"],
@@ -36,20 +36,20 @@
         "scrapeDetails": {
             "title": "Scrape Details",
             "type": "boolean",
-            "description": "Whether to scrape detailed information by visiting each business page (slower but more data including full addresses)",
+            "description": "Get complete addresses, hours, and additional details (recommended)",
             "default": true,
             "prefill": true
         },
         "scrapeEmails": {
             "title": "Scrape Emails",
             "type": "boolean",
-            "description": "Whether to attempt extracting email addresses from business pages",
+            "description": "Extract email addresses from business websites (slower but valuable for leads)",
             "default": true
         },
         "maxScrolls": {
             "title": "Maximum Scrolls",
             "type": "integer",
-            "description": "Maximum number of scroll attempts to load more results",
+            "description": "Scroll attempts to load more results. Higher = more results but slower",
             "minimum": 20,
             "maximum": 100,
             "default": 50,

@@ -1,7 +1,7 @@
 {
   "name": "google-maps-business-scraper",
-  "version": "0.4.0",
-  "description": "Google Maps Business Scraper - Extract 100+ business listings with comprehensive data",
+  "version": "0.5.0",
+  "description": "Extract business data from Google Maps - addresses, phones, hours, emails, reviews. Up to 120 results per search with 8 language support.",
   "main": "main.js",
   "scripts": {
     "start": "node main.js",
@@ -22,7 +22,7 @@
     "reviews",
     "business-information"
   ],
-  "author": "Google Maps Business Scraper",
+  "author": "FuturizeRush",
   "license": "Apache-2.0",
   "dependencies": {
     "apify": "^3.4.4",
@@ -30,7 +30,7 @@
   },
   "repository": {
     "type": "git",
-    "url": "https://github.com/your-username/google-maps-business-scraper"
+    "url": "https://github.com/FuturizeRush/google-maps-scraper-apify"
   },
   "engines": {
     "node": ">=20.0.0"
