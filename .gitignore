@@ -29,6 +29,10 @@ check-*.sh
 final-*.json
 comprehensive-*.json
 quick-*.json
+debug-*.js
+apify-test-suite.js
+jest.config.js
+CODE_REVIEW_REPORT.md
 
 # Screenshots and images
 *.png
