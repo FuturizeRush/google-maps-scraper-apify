@@ -30,9 +30,9 @@ class GoogleMapsScraper {
             maxResults: config.maxResults || 100,           // 最大結果數量
             language: config.language || 'en',              // 界面語言
             headless: config.headless !== false,            // 是否無頭模式
-            maxScrolls: config.maxScrolls || 100,           // 最大滾動次數
-            scrapeDetails: config.scrapeDetails || false,   // 是否爬取詳細資訊
-            scrapeEmails: config.scrapeEmails || false,     // 是否爬取電子郵件
+            maxScrolls: config.maxScrolls || 50,            // 最大滾動次數
+            scrapeDetails: config.scrapeDetails !== false,  // 是否爬取詳細資訊（預設為true）
+            scrapeEmails: config.scrapeEmails !== false,    // 是否爬取電子郵件（預設為true）
             directUrl: config.directUrl || null,            // 直接網址
             maxRetries: config.maxRetries || 3,             // 最大重試次數
             retryDelay: config.retryDelay || 1000          // 重試延遲（毫秒）
@@ -542,6 +542,7 @@ class GoogleMapsScraper {
                             for (let i = 0; i < allSpans.length; i++) {
                                 const span = allSpans[i];
                                 // 強化邏輯，排除評分格式和價格範圍
+                                // 重要：排除飯店特有的訂房提示文字
                                 if (span && 
                                     !span.match(/^\d+\.\d+/) && // 不是評分
                                     !span.match(/\d+\.\d+\s*\(\d+/) && // 不是評分加評論數格式
@@ -552,6 +553,11 @@ class GoogleMapsScraper {
                                     !span.match(/¥\d+/) && // 不是日圓價格
                                     !span.match(/^[開營已關]/) && // 不是營業狀態
                                     !span.match(/AM|PM|時間|Hours/) && // 不是時間
+                                    !span.includes('選取日期') && // 排除「選取日期以查看最佳房價」
+                                    !span.includes('Select dates') && // 排除英文版本
+                                    !span.includes('查看房價') && // 排除查看房價
+                                    !span.includes('最佳房價') && // 排除最佳房價
+                                    !span.includes('View prices') && // 排除英文版本
                                     span.length > 1 && span.length < 50) {
                                     businessType = span;
                                     break;
@@ -694,23 +700,63 @@ class GoogleMapsScraper {
                 }, 3, `Navigation to ${business.name}`);
 
 
-                // 嘗試展開營業時間以取得完整的週間表
+                // 先檢查頁面上是否已有營業時間表格（24小時商家通常直接顯示）
                 const weeklyHours = await page.evaluate(async () => {
+                    // 首先檢查是否已經有營業時間表格存在
+                    let existingHours = {};
+                    const existingTables = document.querySelectorAll('table');
+                    
+                    for (const table of existingTables) {
+                        const text = table.textContent || '';
+                        // 檢查是否包含營業時間資訊
+                        if (text.includes('星期') && (text.includes('小時') || text.includes(':'))  || 
+                            text.includes('Monday') || text.includes('Tuesday')) {
+                            const rows = table.querySelectorAll('tr');
+                            rows.forEach(row => {
+                                const cells = row.querySelectorAll('td');
+                                if (cells.length >= 2) {
+                                    const dayText = cells[0].textContent?.trim() || '';
+                                    const hoursText = cells[1].textContent?.trim() || '';
+                                    
+                                    // 確認是星期資訊
+                                    if (dayText && hoursText && 
+                                        (dayText.includes('星期') || dayText.includes('週') || 
+                                         dayText.match(/Monday|Tuesday|Wednesday|Thursday|Friday|Saturday|Sunday/i))) {
+                                        existingHours[dayText] = hoursText;
+                                    }
+                                }
+                            });
+                        }
+                    }
+                    
+                    // 如果已經找到完整的營業時間（7天），直接返回
+                    if (Object.keys(existingHours).length >= 7) {
+                        console.log('Found existing hours table with', Object.keys(existingHours).length, 'days');
+                        return existingHours;
+                    }
+                    
+                    // 如果沒有找到完整資料，嘗試點擊展開
                     // 尋找並點擊營業時間按鈕以展開
                     const hoursButtons = [
                         ...document.querySelectorAll('button[data-item-id*="hour"]'),
                         ...document.querySelectorAll('button[aria-label*="Hours"]'),
                         ...document.querySelectorAll('button[aria-label*="hours"]'),
+                        ...document.querySelectorAll('button[aria-label*="營業時間"]'),
                         ...document.querySelectorAll('div[aria-label*="Hours"]'),
                         ...Array.from(document.querySelectorAll('button')).filter(btn => {
                             const text = (btn.textContent || '') + (btn.getAttribute('aria-label') || '');
-                            return text.match(/\d{1,2}[:]\d{2}|AM|PM|Open|Closed|⋅/);
+                            return text.match(/\d{1,2}[:]\d{2}|AM|PM|Open|Closed|⋅|24\s*小時|24\s*hours/);
                         })
                     ];
                     
                     for (const button of hoursButtons) {
                         if (button && typeof button.click === 'function') {
                             try {
+                                // 檢查是否為24小時營業
+                                const buttonText = button.textContent || button.getAttribute('aria-label') || '';
+                                const is24Hours = buttonText.includes('24 小時') || buttonText.includes('24小時') || 
+                                                 buttonText.includes('24 hours') || buttonText.includes('24h');
+                                
                                 button.click();
                                 // 等待展開
                                 await new Promise(resolve => setTimeout(resolve, 1500));
@@ -733,8 +779,15 @@ class GoogleMapsScraper {
                                                 const dayText = cells[0].textContent?.trim() || '';
                                                 const hoursText = cells[1].textContent?.trim() || '';
                                                 
-                                                if (dayText && hoursText) {
-                                                    weeklyHours[dayText] = hoursText;
+                                                if (dayText && hoursText && 
+                                                    !dayText.includes('複製營業時間') &&
+                                                    !hoursText.includes('複製營業時間')) {
+                                                    // 清理文字
+                                                    const cleanDay = dayText.replace(/\([^)]+\)/, '').trim();
+                                                    const cleanHours = hoursText.replace('複製營業時間', '').trim();
+                                                    if (cleanDay && cleanHours) {
+                                                        weeklyHours[cleanDay] = cleanHours;
+                                                    }
                                                 }
                                             }
                                         });
@@ -745,12 +798,47 @@ class GoogleMapsScraper {
                                         const listItems = hoursContainer.querySelectorAll('li');
                                         listItems.forEach(item => {
                                             const text = item.textContent?.trim() || '';
+                                            if (text.includes('複製營業時間')) return;
+                                            
                                             // 解析像 "Monday: 9:00 AM – 5:00 PM" 的格式
-                                            const match = text.match(/^([^:]+):\s*(.+)$/);
+                                            const match = text.match(/^([^:：]+)[:：]\s*(.+)$/);
                                             if (match) {
-                                                weeklyHours[match[1].trim()] = match[2].trim();
+                                                const day = match[1].trim();
+                                                const hours = match[2].trim().replace('複製營業時間', '').trim();
+                                                if (day && hours) {
+                                                    weeklyHours[day] = hours;
+                                                }
+                                            } else if (text.includes('24 小時') || text.includes('24小時')) {
+                                                // 特殊處理24小時格式
+                                                const dayMatch = text.match(/^(星期[一二三四五六日]|週[一二三四五六日]|Monday|Tuesday|Wednesday|Thursday|Friday|Saturday|Sunday)/);
+                                                if (dayMatch) {
+                                                    weeklyHours[dayMatch[1]] = '24 小時營業';
+                                                }
                                             }
                                         });
+                                    }
+                                    
+                                    // 如果是24小時營業但只有部分天數，填充所有天數
+                                    if (is24Hours && Object.keys(weeklyHours).length > 0 && Object.keys(weeklyHours).length < 7) {
+                                        const allDaysChinese = ['星期一', '星期二', '星期三', '星期四', '星期五', '星期六', '星期日'];
+                                        const allDaysEnglish = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
+                                        
+                                        // 檢查是否所有值都是24小時
+                                        const allValues24H = Object.values(weeklyHours).every(h => 
+                                            h.includes('24 小時') || h.includes('24小時') || h.includes('24 hours') || h === '24h'
+                                        );
+                                        
+                                        if (allValues24H) {
+                                            // 根據現有的語言填充
+                                            const hasChinese = Object.keys(weeklyHours).some(k => k.includes('星期'));
+                                            const daysToUse = hasChinese ? allDaysChinese : allDaysEnglish;
+                                            
+                                            daysToUse.forEach(day => {
+                                                if (!weeklyHours[day]) {
+                                                    weeklyHours[day] = '24 小時營業';
+                                                }
+                                            });
+                                        }
                                     }
                                     
                                     // 如果存在對話框則關閉
@@ -758,7 +846,7 @@ class GoogleMapsScraper {
                                                    document.querySelector('div[role="dialog"] button[aria-label*="Back"]');
                                     if (closeBtn) closeBtn.click();
                                     
-                                    return weeklyHours;
+                                    return Object.keys(weeklyHours).length > 0 ? weeklyHours : null;
                                 }
                                 break;
                             } catch (e) {
@@ -766,7 +854,8 @@ class GoogleMapsScraper {
                             }
                         }
                     }
-                    return null;
+                    // 如果沒有通過點擊找到資料，返回已有的資料
+                    return Object.keys(existingHours).length > 0 ? existingHours : null;
                 }).catch(err => {
                     log.debug('Could not expand hours:', err.message);
                     return null;
@@ -957,16 +1046,37 @@ class GoogleMapsScraper {
                         for (const element of allElements) {
                             const text = element.textContent || '';
                             
+                            // 排除設施營業時間
+                            const isFacilityHours = text.includes('自助餐廳') || text.includes('泳池') || 
+                                                   text.includes('健身') || text.includes('餐廳') ||
+                                                   text.includes('Pool') || text.includes('Gym') || 
+                                                   text.includes('Restaurant') || text.includes('Buffet') ||
+                                                   text.includes('Spa') || text.includes('Bar') ||
+                                                   text.includes('Lounge') || text.includes('酒吧') ||
+                                                   text.includes('大廳') || text.includes('Lobby');
+                            
                             // 檢查是否包含時間格式 (如 "7 AM to 10:30 PM")
-                            if (text.match(/\d{1,2}\s*(:|：)\s*\d{2}\s*(AM|PM|am|pm)/)) {
+                            if (!isFacilityHours && text.match(/\d{1,2}\s*(:|：)\s*\d{2}\s*(AM|PM|am|pm)/)) {
                                 // 確保不是太長的文字塊
                                 if (text.length < 500) {
-                                    const cleanedText = text
-                                        .replace(/[\ue000-\uf8ff]/g, '')
-                                        .replace(/\s+/g, ' ')
-                                        .trim();
-                                    data.hours = [cleanedText]; // 包裝成 array
-                                    break;
+                                    // 檢查是否為主要營業時間（通常包含星期或 24 小時等關鍵字）
+                                    const isMainHours = text.includes('24') || text.includes('週') || 
+                                                       text.includes('Monday') || text.includes('星期') ||
+                                                       text.includes('Daily') || text.includes('每日') ||
+                                                       text.includes('Open') || text.includes('營業');
+                                    
+                                    if (isMainHours || !data.hours || data.hours.length === 0) {
+                                        const cleanedText = text
+                                            .replace(/[\ue000-\uf8ff]/g, '')
+                                            .replace(/\s+/g, ' ')
+                                            .trim();
+                                        data.hours = [cleanedText]; // 包裝成 array
+                                        
+                                        // 如果找到主要營業時間，立即停止搜尋
+                                        if (isMainHours) {
+                                            break;
+                                        }
+                                    }
                                 }
                             }
                         }
@@ -1159,49 +1269,33 @@ class GoogleMapsScraper {
                         }
                     }
                     
-                    // Business Type - 從詳細頁面提取，避免錯誤的評分數據
-                    const typeElements = [
-                        document.querySelector('button[jsaction*="category"]'),
-                        document.querySelector('span[class*="DkEaL"]'),
-                        document.querySelector('[data-value="category"]'),
-                        ...Array.from(document.querySelectorAll('span')).filter(span => {
-                            const text = span.textContent?.trim();
-                            return text && text.length > 2 && text.length < 50 && 
-                                   !text.match(/\d+\.\d+/) && // 不包含評分
-                                   !text.match(/\(\d+[\d,]*\)/) && // 不包含評論數
-                                   !text.includes('·') && 
-                                   !text.match(/\$+/) && // 不包含價格
-                                   !text.match(/^[開營已關]/) && // 不是營業狀態
-                                   !text.match(/AM|PM|時間|Hours/) && // 不是時間相關
-                                   !text.includes('拖曳即可變更') && // 排除介面文字
-                                   !text.includes('Drag to reposition') && // 排除英文介面文字
-                                   !text.includes('收合側邊面板') && // 排除側邊面板文字
-                                   !text.includes('Collapse side panel') && // 排除英文側邊面板文字
-                                   !text.includes('折叠侧边栏') && // 排除簡體中文
-                                   !text.includes('사이드 패널 축소') && // 排除韓文
-                                   !text.includes('サイドパネルを折りたたむ'); // 排除日文
-                        })
-                    ].filter(Boolean);
+                    // Business Type - 簡單直接的提取方法
+                    // 不試圖猜測，只提取明確的資訊
                     
-                    for (const element of typeElements) {
-                        const typeText = element.textContent?.trim();
-                        if (typeText && typeText.length > 2 && typeText.length < 50) {
-                            // 雙重檢查，確保不是評分格式或介面文字
-                            if (!typeText.match(/^\d+\.\d+\s*\(\d+/) && 
-                                !typeText.match(/\d+\.\d+/) && 
-                                !typeText.includes('(') &&
-                                !typeText.includes('拖曳即可變更') &&
-                                !typeText.includes('Drag to reposition') &&
-                                !typeText.includes('收合側邊面板') &&
-                                !typeText.includes('Collapse side panel') &&
-                                !typeText.includes('折叠侧边栏') &&
-                                !typeText.includes('사이드 패널 축소') &&
-                                !typeText.includes('サイドパネルを折りたたむ')) {
-                                data.businessType = typeText;
+                    // 1. 查找類別按鈕（最可靠的來源）
+                    const categoryButton = document.querySelector('button[jsaction*="category"]');
+                    if (categoryButton) {
+                        const text = categoryButton.textContent?.trim();
+                        // 只做最基本的驗證
+                        if (text && text.length < 50 && !text.includes('選取日期')) {
+                            data.businessType = text.replace(/^[·\s•]+/, '').trim();
+                        }
+                    }
+                    
+                    // 2. 如果沒有類別按鈕，查找包含星級的文字（這是明確的分類資訊）
+                    if (!data.businessType) {
+                        const starPattern = /\d\s*[星☆]\s*級/;
+                        const spans = document.querySelectorAll('span');
+                        for (const span of spans) {
+                            const text = span.textContent?.trim();
+                            if (text && starPattern.test(text) && text.length < 20) {
+                                data.businessType = text.replace(/^[·\s•]+/, '').trim();
                                 break;
                             }
                         }
                     }
+                    
+                    // 就這樣，不再試圖猜測其他類型
 
                     return data;
                 }, weeklyHours); // 傳入weeklyHours參數

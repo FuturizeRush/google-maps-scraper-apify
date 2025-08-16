@@ -19,7 +19,7 @@
             "title": "Maximum Results",
             "type": "integer",
             "description": "Maximum number of results to extract per search (Google Maps typically limits to ~120)",
-            "minimum": 1,
+            "minimum": 50,
             "maximum": 200,
             "default": 100,
             "prefill": 100
@@ -44,13 +44,13 @@
             "title": "Scrape Emails",
             "type": "boolean",
             "description": "Whether to attempt extracting email addresses from business pages",
-            "default": false
+            "default": true
         },
         "maxScrolls": {
             "title": "Maximum Scrolls",
             "type": "integer",
             "description": "Maximum number of scroll attempts to load more results",
-            "minimum": 1,
+            "minimum": 20,
             "maximum": 100,
             "default": 50,
             "prefill": 50

@@ -5,7 +5,12 @@
   "main": "main.js",
   "scripts": {
     "start": "node main.js",
-    "test": "node test.js"
+    "test": "jest",
+    "test:unit": "jest tests/unit",
+    "test:integration": "node tests/integration/fullTest.js",
+    "test:load": "node tests/load/loadTest.js",
+    "test:apify": "apify run -p",
+    "test:all": "npm run test:unit && npm run test:integration"
   },
   "keywords": [
     "google-maps",

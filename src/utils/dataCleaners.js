@@ -78,9 +78,20 @@ function cleanBusinessHours(text) {
     // Remove "Copy open hours" and similar text
     cleaned = cleaned
         .replace(/Copy open hours/gi, '')
+        .replace(/複製營業時間/g, '')
         .replace(/\bSee more hours\b/gi, '')
         .replace(/·\s*See more/gi, '')
+        .replace(/,\s*複製營業時間/g, '')
+        .replace(/,\s*Copy hours/gi, '')
         .trim();
+    
+    // 處理24小時營業格式
+    if (cleaned.includes('24 小時營業') || cleaned.includes('24小時營業')) {
+        // 如果只是單純的 "星期X、24 小時營業"，保持簡潔格式
+        cleaned = cleaned
+            .replace(/^(星期[一二三四五六日])[、，]\s*/g, '$1: ')
+            .replace(/^(週[一二三四五六日])[、，]\s*/g, '$1: ');
+    }
     
     // Remove trailing commas
     cleaned = cleaned.replace(/,\s*$/, '');
@@ -146,10 +157,175 @@ function validateAddress(address) {
     return cleaned;
 }
 
+/**
+ * 清理商家名稱
+ */
+function cleanBusinessName(name) {
+    if (!name) return '';
+    return name.trim().replace(/\s+/g, ' ');
+}
+
+/**
+ * 清理電話號碼
+ */
+function cleanPhoneNumber(phone) {
+    if (!phone) return '';
+    
+    // 移除價格範圍格式
+    if (phone.match(/^\d{2,3}-\d{2,3}$/)) return '';
+    
+    // 移除非數字字符（保留 + 和空格）
+    let cleaned = phone.replace(/[^\d+\s\-()]/g, '').trim();
+    
+    // 如果不包含數字，返回空
+    if (!cleaned.match(/\d/)) return '';
+    
+    // 台灣電話格式轉換
+    if (cleaned.match(/^0\d{1,2}[\s\-]?\d{3,4}[\s\-]?\d{3,4}$/)) {
+        cleaned = cleaned.replace(/^0/, '+886 ');
+        cleaned = cleaned.replace(/[\s\-]+/g, ' ');
+    }
+    
+    // 台灣手機格式
+    if (cleaned.match(/^09\d{2}[\s\-]?\d{3}[\s\-]?\d{3}$/)) {
+        cleaned = cleaned.replace(/^0/, '+886 ');
+        cleaned = cleaned.replace(/[\s\-]+/g, ' ');
+    }
+    
+    return cleaned;
+}
+
+/**
+ * 清理地址
+ */
+function cleanAddress(address) {
+    if (!address) return '';
+    
+    // 移除評分格式
+    if (address.match(/^[\d.]+\s*\([0-9,]+\)$/)) return '';
+    
+    // 清理多餘空格
+    return address.trim().replace(/\s+/g, '');
+}
+
+/**
+ * 清理網站 URL
+ */
+function cleanWebsiteUrl(url) {
+    if (!url) return '';
+    
+    let cleaned = url.trim();
+    
+    // 添加協議
+    if (!cleaned.match(/^https?:\/\//)) {
+        if (cleaned.includes('facebook.com')) {
+            cleaned = 'https://www.' + cleaned;
+        } else if (cleaned.startsWith('www.')) {
+            cleaned = 'https://' + cleaned;
+        } else {
+            cleaned = 'https://' + cleaned;
+        }
+    }
+    
+    // 移除 UTM 參數
+    if (cleaned.includes('?')) {
+        cleaned = cleaned.split('?')[0];
+    }
+    
+    return cleaned;
+}
+
+/**
+ * 驗證郵件地址
+ */
+function validateEmail(email) {
+    if (!email) return false;
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    return emailRegex.test(email);
+}
+
+/**
+ * 從文字中提取郵件地址
+ */
+function extractEmails(text) {
+    if (!text) return [];
+    
+    const emailRegex = /[a-zA-Z0-9._%+\-]+@[a-zA-Z0-9.\-]+\.[a-zA-Z]{2,}/g;
+    const matches = text.match(emailRegex) || [];
+    
+    // 去重複
+    return [...new Set(matches)];
+}
+
+/**
+ * 正規化評分
+ */
+function normalizeRating(rating) {
+    if (!rating && rating !== 0) return 0;
+    
+    const num = parseFloat(rating);
+    if (isNaN(num)) return 0;
+    
+    // 限制在 0-5 範圍內
+    const normalized = Math.max(0, Math.min(5, num));
+    
+    // 四捨五入到小數點後一位
+    return Math.round(normalized * 10) / 10;
+}
+
+/**
+ * 正規化評論數
+ */
+function normalizeReviewCount(count) {
+    if (!count && count !== 0) return 0;
+    
+    // 移除逗號和括號
+    const cleaned = String(count).replace(/[,()]/g, '');
+    const num = parseInt(cleaned, 10);
+    
+    return isNaN(num) ? 0 : num;
+}
+
+/**
+ * 清理商家類型
+ */
+function cleanBusinessType(type) {
+    if (!type) return '';
+    
+    const cleaned = type.trim();
+    
+    // 過濾掉看起來像評分或價格的文字
+    if (cleaned.match(/^[\d.]+\s*\([0-9,]+\)$/)) return '';
+    if (cleaned.match(/^\$+$/)) return '';
+    
+    return cleaned;
+}
+
+// 別名函數 (為了兼容性)
+const normalizeAddress = validateAddress;
+const normalizePhoneNumber = cleanPhoneNumber;
+const normalizePriceLevel = extractPriceLevel;
+const normalizeBusinessHours = cleanBusinessHours;
+
 module.exports = {
     cleanUnicodeText,
     extractBusinessType,
     extractPriceLevel,
     cleanBusinessHours,
-    validateAddress
+    validateAddress,
+    // 新增的函數
+    cleanBusinessName,
+    cleanPhoneNumber,
+    cleanAddress,
+    cleanWebsiteUrl,
+    validateEmail,
+    extractEmails,
+    normalizeRating,
+    normalizeReviewCount,
+    cleanBusinessType,
+    // 別名
+    normalizeAddress,
+    normalizePhoneNumber,
+    normalizePriceLevel,
+    normalizeBusinessHours
 };
