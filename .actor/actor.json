@@ -9,6 +9,11 @@
     },
     "input": "./INPUT_SCHEMA.json",
     "dockerfile": "./Dockerfile",
+    "runOptions": {
+        "build": "latest",
+        "timeoutSecs": 7200,
+        "memoryMbytes": 8192
+    },
     "storages": {
         "dataset": {
             "actorSpecification": 1,
