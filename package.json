@@ -1,6 +1,6 @@
 {
   "name": "google-maps-business-scraper",
-  "version": "0.5.0",
+  "version": "0.1.0",
   "description": "Extract business data from Google Maps - addresses, phones, hours, emails, reviews. Up to 120 results per search with 8 language support.",
   "main": "main.js",
   "scripts": {
@@ -27,10 +27,6 @@
   "dependencies": {
     "apify": "^3.4.4",
     "puppeteer": "^24.16.2"
-  },
-  "repository": {
-    "type": "git",
-    "url": "https://github.com/FuturizeRush/google-maps-scraper-apify"
   },
   "engines": {
     "node": ">=20.0.0"

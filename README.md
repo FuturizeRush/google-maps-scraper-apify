@@ -218,23 +218,6 @@ Scrape specific Google Maps URLs directly:
 - Consider GDPR/privacy regulations for email data
 - Avoid excessive scraping that could impact service performance
 
-## 🔄 Updates & Versioning
-
-**Current Version**: 0.5.0
-
-### Recent Updates
-- ✅ Fixed 24-hour business hours extraction
-- ✅ Improved email extraction from websites
-- ✅ Enhanced address parsing for multiple countries
-- ✅ Optimized cost with minimum 50 results per search
-- ✅ Added support for 8 languages
-
-### Planned Improvements
-- Additional data fields extraction
-- Enhanced filtering options
-- Faster processing with parallel extraction
-- More export format options
-
 ## 💬 Support
 
 ### Common Issues & Solutions

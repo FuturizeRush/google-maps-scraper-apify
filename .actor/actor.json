@@ -3,7 +3,7 @@
     "name": "google-maps-business-scraper",
     "title": "Google Maps Business Scraper",
     "description": "Extract business listings from Google Maps with complete information including addresses, phone numbers, operating hours, emails, and more. Get up to 120 results per search with support for 8 languages and detailed business data extraction.",
-    "version": "0.5",
+    "version": "0.1",
     "meta": {
         "templateId": "js-start"
     },
@@ -20,13 +20,18 @@
                         "fields": [
                             "name",
                             "placeId",
+                            "latitude",
+                            "longitude",
                             "rating",
                             "reviews",
                             "address",
                             "businessType",
                             "url",
                             "phone",
-                            "website"
+                            "website",
+                            "email",
+                            "hours",
+                            "priceLevel"
                         ]
                     },
                     "display": {
