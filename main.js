@@ -56,7 +56,7 @@ Actor.main(async () => {
     } = input;
 
     // 驗證是否有搜尋內容
-    if (searchQueries.length === 0 && startUrls.length === 0) {
+    if ((!searchQueries || searchQueries.length === 0) && (!startUrls || startUrls.length === 0)) {
         throw new Error('Please provide either searchQueries or startUrls');
     }
 
@@ -72,7 +72,8 @@ Actor.main(async () => {
     };
 
     // 處理搜尋查詢
-    for (const query of searchQueries) {
+    if (searchQueries && searchQueries.length > 0) {
+        for (const query of searchQueries) {
         try {
             log.info(`Processing search query: ${query}`);
             stats.totalSearches++;
@@ -132,10 +133,12 @@ Actor.main(async () => {
                 timestamp: new Date().toISOString()
             });
         }
+        }
     }
 
     // 處理起始網址（如果有提供）
-    for (const urlObj of startUrls) {
+    if (startUrls && startUrls.length > 0) {
+        for (const urlObj of startUrls) {
         try {
             const url = urlObj.url || urlObj;
             log.info(`Processing URL: ${url}`);
@@ -194,6 +197,7 @@ Actor.main(async () => {
                 error: error.message,
                 timestamp: new Date().toISOString()
             });
+        }
         }
     }
 

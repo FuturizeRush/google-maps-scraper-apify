@@ -88,5 +88,5 @@
             "default": []
         }
     },
-    "required": ["searchQueries"]
+    "required": []
 }
