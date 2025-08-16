@@ -2,9 +2,6 @@
 
 **Extract business listings from Google Maps with complete information including addresses, phone numbers, hours, emails, and more.** Built for Apify platform with enterprise-grade reliability.
 
-[![Apify Actor](https://img.shields.io/badge/Apify-Actor-green)](https://apify.com/actors)
-[![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](LICENSE)
-
 ## ✨ What You Can Extract
 
 This Google Maps scraper extracts comprehensive business data including:
@@ -15,24 +12,16 @@ This Google Maps scraper extracts comprehensive business data including:
 - **Operating Hours**: Full weekly schedules including 24-hour businesses
 - **Price Levels**: Budget indicators ($, $$, $$$, $$$$)
 
-## 🚀 Quick Start Guide
+## 🚀 Quick Start
 
-### 1. Deploy on Apify
+### Run on Apify Platform
 
-```bash
-# Clone the repository
-git clone https://github.com/FuturizeRush/google-maps-scraper-apify.git
+1. Go to the Actor page on Apify Store
+2. Click "Try for free" or "Run"
+3. Enter your search queries
+4. Click "Start" to begin extraction
 
-# Navigate to project
-cd google-maps-scraper-apify
-
-# Deploy to Apify
-apify push
-```
-
-### 2. Basic Usage
-
-Simply provide search queries to start extracting data:
+### Basic Input Example
 
 ```json
 {
@@ -43,8 +32,6 @@ Simply provide search queries to start extracting data:
     ]
 }
 ```
-
-### 3. View Results
 
 Results are automatically saved to Apify Dataset in JSON format, ready for export to CSV, Excel, or API integration.
 
@@ -66,7 +53,7 @@ Results are automatically saved to Apify Dataset in JSON format, ready for expor
 | `scrapeEmails` | Boolean | true | Attempt to extract emails from business websites |
 | `maxScrolls` | Number | 50 | Maximum scroll attempts (min: 20, max: 100) |
 
-### Example: Full Configuration
+### Advanced Configuration Example
 
 ```json
 {
@@ -84,7 +71,7 @@ Results are automatically saved to Apify Dataset in JSON format, ready for expor
 
 ## 📦 Output Data Format
 
-Each business entry contains:
+Each business entry contains comprehensive information:
 
 ```json
 {
@@ -150,17 +137,17 @@ Each business entry contains:
 ## 💡 Best Practices
 
 ### 1. Optimize Your Searches
-- **Be Specific**: "Italian restaurants downtown Taipei" > "restaurants"
-- **Use Local Language**: Search in the local language for better results
-- **Include Location**: Always specify area/city for accurate results
+- **Be Specific**: "Italian restaurants downtown Taipei" yields better results than "restaurants"
+- **Use Local Language**: Search in the local language for more accurate results
+- **Include Location**: Always specify area/city for precise results
 
 ### 2. Cost Optimization
 - **Batch Searches**: Combine related searches to maximize efficiency
 - **Set Appropriate Limits**: Use `maxResults: 50-100` for balanced cost/data ratio
-- **Enable Details Selectively**: Only use `scrapeDetails: true` when needed
+- **Monitor Usage**: Check compute units consumption in Apify Console
 
 ### 3. Data Quality
-- **Verify Results**: Cross-check critical data points
+- **Verify Results**: Cross-check critical data points when necessary
 - **Handle Missing Data**: Not all businesses have complete information
 - **Regular Updates**: Re-scrape periodically for current data
 
@@ -194,56 +181,93 @@ Scrape specific Google Maps URLs directly:
 - **Success Rate**: 95%+ data extraction accuracy
 - **Coverage**: Up to 120 results per search (Google's limit)
 - **Languages**: 8 supported languages for international data
+- **Concurrent Runs**: Support for parallel execution
 
-## 🛠️ Technical Details
+## 🛠️ Technical Specifications
 
-- **Platform**: Apify Actor (Node.js 20)
-- **Browser**: Puppeteer with Chrome
-- **Storage**: Automatic dataset storage on Apify
-- **Export Formats**: JSON, CSV, Excel, XML
+### Platform Requirements
+- **Runtime**: Apify Actor platform
+- **Node.js**: Version 20+
+- **Memory**: 4GB-8GB recommended
+- **Timeout**: 60-300 seconds per run
+
+### Data Export Options
+- **JSON**: Native format with full data structure
+- **CSV**: Flattened tabular format
+- **Excel**: Formatted spreadsheet
+- **XML**: Structured markup format
+- **API**: Direct integration via Apify API
 
 ## 📝 Important Notes
 
-### Data Limits
+### Data Limitations
 - Google Maps typically shows maximum ~120 results per search
 - Some businesses may not have all data fields available
-- Email extraction requires visiting business websites (slower)
+- Email extraction requires visiting business websites (slower process)
+- Results vary based on search location and query specificity
 
-### Rate Limiting
-- The scraper includes automatic retry mechanisms
-- Built-in delays to avoid rate limiting
+### Rate Limiting & Performance
+- Built-in retry mechanism for failed requests
+- Automatic delay between requests to avoid blocking
 - No proxy required for standard usage
+- Handles timeouts and network errors gracefully
 
-### Compliance
+### Compliance & Ethics
 - Respect robots.txt and terms of service
-- Use extracted data responsibly
+- Use extracted data responsibly and legally
 - Consider GDPR/privacy regulations for email data
+- Avoid excessive scraping that could impact service performance
 
-## 🤝 Support & Contribution
+## 🔄 Updates & Versioning
 
-### Getting Help
-- **Issues**: [GitHub Issues](https://github.com/FuturizeRush/google-maps-scraper-apify/issues)
-- **Documentation**: This README and code comments
-- **Apify Support**: [Apify Discord](https://discord.com/invite/jyEM2PRvMU)
+**Current Version**: 0.5.0
 
-### Contributing
-We welcome contributions! Please:
-1. Fork the repository
-2. Create your feature branch
-3. Test your changes thoroughly
-4. Submit a pull request
+### Recent Updates
+- ✅ Fixed 24-hour business hours extraction
+- ✅ Improved email extraction from websites
+- ✅ Enhanced address parsing for multiple countries
+- ✅ Optimized cost with minimum 50 results per search
+- ✅ Added support for 8 languages
 
-## 📄 License
+### Planned Improvements
+- Additional data fields extraction
+- Enhanced filtering options
+- Faster processing with parallel extraction
+- More export format options
 
-This project is licensed under the Apache License 2.0 - see the [LICENSE](LICENSE) file for details.
+## 💬 Support
 
-## 🙏 Acknowledgments
+### Common Issues & Solutions
 
-Built with:
-- [Apify SDK](https://sdk.apify.com/) - Web scraping and automation platform
-- [Puppeteer](https://pptr.dev/) - Headless Chrome automation
-- Google Maps data for business insights
+**Issue**: Getting fewer results than expected
+- **Solution**: Use more specific search queries with location details
+
+**Issue**: Missing email addresses
+- **Solution**: Enable `scrapeEmails: true` and ensure `scrapeDetails: true`
+
+**Issue**: Timeout errors
+- **Solution**: Reduce `maxResults` or increase Actor timeout settings
+
+**Issue**: Incomplete addresses
+- **Solution**: Enable `scrapeDetails: true` for full address extraction
+
+### Actor Statistics
+Monitor your Actor's performance in the Apify Console:
+- Run history and logs
+- Dataset size and records
+- Compute units consumption
+- Error rates and success metrics
+
+## 🏆 Why Choose This Actor?
+
+✅ **Comprehensive Data**: Extract 15+ data fields per business
+✅ **High Reliability**: 95%+ success rate with retry mechanisms
+✅ **Cost Efficient**: Minimum 50 results per search for better value
+✅ **Multi-language**: Support for 8 major languages
+✅ **No Proxy Needed**: Direct connection for simplified setup
+✅ **Regular Updates**: Actively maintained and improved
+✅ **Enterprise Ready**: Scalable for large-scale data extraction
 
 ---
 
-**Ready to extract Google Maps data?** [Deploy on Apify](https://apify.com) and start gathering business intelligence today!
+**Ready to extract Google Maps data?** Start using this Actor on the Apify platform today and transform location data into business intelligence!
